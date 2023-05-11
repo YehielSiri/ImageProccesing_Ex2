@@ -8,7 +8,7 @@ def myID() -> np.int:
     :return: int
     """
 
-    return 100
+    return 204155311
 
 def conv1D(in_signal: np.ndarray, k_size: np.ndarray) -> np.ndarray:
     """
@@ -17,8 +17,16 @@ def conv1D(in_signal: np.ndarray, k_size: np.ndarray) -> np.ndarray:
     :param k_size: 1-D array as a kernel
     :return: The convolved array
     """
+    array_len, kernel_len = in_signal.size, k_size.size
+    
+    # Padding with zeroes:
+    pad_array = np.pad(in_signal, (kernel_len - 1,))
 
-    return
+    # Flip the kernel array:
+    flip_kernel = np.flip(k_size)
+
+    # Convolute the array:
+    return np.array([np.dot(pad_array[i:i + kernel_len], flip_kernel) for i in range (array_len + kernel_len - 1)])
 
 
 def conv2D(in_image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
