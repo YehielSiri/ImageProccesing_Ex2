@@ -126,7 +126,7 @@ def convolve(image, kernel):
 def convDerivative(in_image: np.ndarray) -> (np.ndarray, np.ndarray):
     """
     Calculate gradient of an image
-    :param in_image: Grayscale iamge
+    :param in_image: Grayscale image
     :return: (directions, magnitude)
     """
     #kernel = np.array([[1, 0, -1]])
@@ -151,7 +151,7 @@ def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:
     :return: The Blurred image
     """
 
-    return
+    return conv2D(in_image, gaussianKernel(k_size))
 
 
 def blurImage2(in_image: np.ndarray, k_size: int) -> np.ndarray:
