@@ -14,6 +14,10 @@ import math
 import numpy as np
 import cv2
 
+
+DERIVATIVE_KERNEL = np.array([[1, 0, -1]])
+
+
 def myID() -> np.int:
     """
     Return my ID (not the friend's ID I copied from)
@@ -47,6 +51,40 @@ def conv2D(in_image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     :param in_image: 2D image
     :param kernel: A kernel
     :return: The convolved image
+
+def convolve(image, kernel):
+	# grab the spatial dimensions of the image, along with
+	# the spatial dimensions of the kernel
+	(iH, iW) = image.shape[:2]
+	(kH, kW) = kernel.shape[:2]
+	# allocate memory for the output image, taking care to
+	# "pad" the borders of the input image so the spatial
+	# size (i.e., width and height) are not reduced
+	pad = (kW - 1) // 2
+	image = cv2.copyMakeBorder(image, pad, pad, pad, pad,
+		cv2.BORDER_REPLICATE)
+	output = np.zeros((iH, iW), dtype="float32")
+	# loop over the input image, "sliding" the kernel across
+	# each (x, y)-coordinate from left-to-right and top to
+	# bottom
+	for y in np.arange(pad, iH + pad):
+		for x in np.arange(pad, iW + pad):
+			# extract the ROI of the image by extracting the
+			# *center* region of the current (x, y)-coordinates
+			# dimensions
+			roi = image[y - pad:y + pad + 1, x - pad:x + pad + 1]
+			# perform the actual convolution by taking the
+			# element-wise multiplicate between the ROI and
+			# the kernel, then summing the matrix
+			k = (roi * kernel).sum()
+			# store the convolved value in the output (x,y)-
+			# coordinate of the output image
+			output[y - pad, x - pad] = k
+	# rescale the output image to be in the range [0, 255]
+	output = rescale_intensity(output, in_range=(0, 255))
+	output = (output * 255).astype("uint8")
+	# return the output image
+	return output
     """
     # Set the convolution measurements according the kernel dimension:
     if ((kernel.ndim % 2) == 0)
@@ -66,6 +104,14 @@ def conv2D(in_image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
         kernel = kernel[-1::-1, -1::-1]
     
     # For option " ’border Type’ = cv2.BORDER_REPLICATE ", extra padding:
+    """
+        if c == 27:
+            break
+        elif c == 99: # 99 = ord('c')
+            borderType = cv.BORDER_CONSTANT
+        elif c == 114: # 114 = ord('r')
+            borderType = cv.BORDER_REPLICATE
+    """
     padded_image = cv2.copyMakeBorder(in_image, height_pad, height_pad, width_pad, width_pad, borderType = cv2.BORDER_REPLICATE)
 
     result_image = np.zeros(in_image.shape)
@@ -83,8 +129,18 @@ def convDerivative(in_image: np.ndarray) -> (np.ndarray, np.ndarray):
     :param in_image: Grayscale iamge
     :return: (directions, magnitude)
     """
+    #kernel = np.array([[1, 0, -1]])
+    #kernel_transpose = kernel.T
 
-    return
+    x_der_image = conv2D(in_image, DERIVATIVE_KERNEL)
+    y_der_image = conv2D(in_image, DERIVATIVE_KERNEL.T)
+
+    # Compute magnitude matrix  =>  sqrt( Xi^2 + Yi^2 )
+    magnitude = np.sqrt(np.square(x_der_image) + np.square(y_der_image))
+    # Compute direction matrix  =>  tan^-1(Yi/Xi)  =>  arctan2(Yi/Xi)
+    directions = np.arctan2(y_der_image, x_der_image)
+
+    return magnitude, directions
 
 
 def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:
