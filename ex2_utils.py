@@ -1,3 +1,15 @@
+"""
+        '########:'##::::'##::'########:::
+         ##.....::. ##::'##:::::.....##:::
+         ##::::::::. ##'##:::::::::::##:::
+         ######:::::. ###::::: ########:::
+         ##...:::::: ## ##:::: ##.....::::
+         ##:::::::: ##:. ##::: ##:::::::::
+         ########: ##:::. ##:: ########:::
+        ........::..:::::..:::.........:::
+"""
+
+
 import math
 import numpy as np
 import cv2
@@ -36,8 +48,33 @@ def conv2D(in_image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     :param kernel: A kernel
     :return: The convolved image
     """
+    # Set the convolution measurements according the kernel dimension:
+    if ((kernel.ndim % 2) == 0)
+        print "The kernel dimension must be odd"
+        return in_image
+    elif (kernel.ndim == 1):
+        convHeight = 1
+        height_pad = 0
+        convWidth = kernel.shape[0]
+        width_pad = int((convWidth - 1) / 2)    # Kernel must be odd
+        kernel = kernel[-1::-1]
+    else:
+        convHeight = kernel.shape[0]
+        height_pad = int((convHeight - 1) / 2)  # Kernel must be odd
+        convWidth = kernel.shape[1]
+        width_pad = int((convWidth - 1) / 2)    # Kernel must be odd
+        kernel = kernel[-1::-1, -1::-1]
+    
+    # For option " ’border Type’ = cv2.BORDER_REPLICATE ", extra padding:
+    padded_image = cv2.copyMakeBorder(in_image, height_pad, height_pad, width_pad, width_pad, borderType = cv2.BORDER_REPLICATE)
 
-    return
+    result_image = np.zeros(in_image.shape)
+    for i in range(result_image.shape[0]):
+        for j in range(result_image.shape[1]):
+            sub_image = padded_image[i: i + convHeight, j: j + convWidth]
+            result_image[i, j] = (sub_image * kernel).sum()
+
+    return result_image
 
 
 def convDerivative(in_image: np.ndarray) -> (np.ndarray, np.ndarray):
