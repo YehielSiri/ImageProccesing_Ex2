@@ -143,6 +143,24 @@ def convDerivative(in_image: np.ndarray) -> (np.ndarray, np.ndarray):
     return magnitude, directions
 
 
+def gaussianKernel(size: int, sigma: float = 1) -> np.ndarray:
+    """
+    Compute a Gaussian kernel in a required size => sigma i,j = 1
+    :param size: Kernel size
+    :param : Kernel SIGMA  -  SIGMA kernel i,j = 1
+    :return: The Gaussian kernel
+    """
+    center = size // 2
+    kernel = np.zeros((size, size))
+
+    for i in range (size):
+        for j in range (size):
+            diff = np.sqrt((i - center) ** 2 + (j - center) ** 2)
+            kernel[i, j] = np.exp(-(diff ** 2) / (2 * sigma ** 2))
+
+    return kernel / np.sum(kernel)
+
+
 def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:
     """
     Blur an image using a Gaussian kernel
@@ -150,6 +168,8 @@ def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:
     :param k_size: Kernel size
     :return: The Blurred image
     """
+    # Test & show my gaussian kernel function:
+    plt.imshow(gaussianKernel(5))
 
     return conv2D(in_image, gaussianKernel(k_size))
 
