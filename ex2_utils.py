@@ -16,6 +16,9 @@ import cv2
 
 
 DERIVATIVE_KERNEL = np.array([[1, 0, -1]])
+LAPLACIAN_MATRIX = np.array([0 ,1 , 0],
+                            [1 ,-4, 1],
+                            [0 , 1, 0])
 
 
 def myID() -> np.int:
@@ -104,14 +107,6 @@ def convolve(image, kernel):
         kernel = kernel[-1::-1, -1::-1]
     
     # For option " ’border Type’ = cv2.BORDER_REPLICATE ", extra padding:
-    """
-        if c == 27:
-            break
-        elif c == 99: # 99 = ord('c')
-            borderType = cv.BORDER_CONSTANT
-        elif c == 114: # 114 = ord('r')
-            borderType = cv.BORDER_REPLICATE
-    """
     padded_image = cv2.copyMakeBorder(in_image, height_pad, height_pad, width_pad, width_pad, borderType = cv2.BORDER_REPLICATE)
 
     result_image = np.zeros(in_image.shape)
@@ -171,6 +166,11 @@ def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:
     # Test & show my gaussian kernel function:
     plt.imshow(gaussianKernel(5))
 
+    # Kernel size must be odd and positive
+    if ((k_size % 2) == 0 || k_size < 0)
+        print "The kernel dimension must be odd and positive"
+        return in_image
+
     return conv2D(in_image, gaussianKernel(k_size))
 
 
@@ -181,8 +181,16 @@ def blurImage2(in_image: np.ndarray, k_size: int) -> np.ndarray:
     :param k_size: Kernel size
     :return: The Blurred image
     """
+    # Kernel size must be odd and positive
+    if ((k_size % 2) == 0 || k_size < 0)
+        print "The kernel dimension must be odd and positive"
+        return in_image
+    
+    # Build a gaussian kernel. cv2 creata an 1D one!
+    kernel1D = cv2.getGaussianKernel(k_size, -1)
+    kernel2D = kernel1D @ kernel1D.transpose()
 
-    return
+    return cv2.filter2D(in_image, -1, kernel2D, borderType = cv2.BORDER_REPLICATE)
 
 
 def edgeDetectionZeroCrossingSimple(img: np.ndarray) -> np.ndarray:
@@ -195,6 +203,41 @@ def edgeDetectionZeroCrossingSimple(img: np.ndarray) -> np.ndarray:
     return
 
 
+def findZCPatterns(img: np.ndarray) -> np.ndarray:
+    """
+    Find zero-crossing patterns in a 'Laplacian of Gaussian'
+    filtered image
+    :param img: LoG filtered image
+    :return: An edge matrix
+    """
+    edge_img = np.zeros(img.shape)
+
+    row, col = img.shape
+    for i in range(1, row - 1):
+        for j in range(1, col - 1):
+            if img[i, j] == 0:
+                if (   (   (img[i - 1, j] > 0 and img[i + 1, j] < 0)
+                        or (img[i - 1, j] < 0 and img[i + 1, j] > 0)   )
+                    or (   (img[i, j - 1] > 0 and img[i, j + 1] < 0)
+                        or (img[i, j - 1] < 0 and img[i, j + 1] > 0)   )   ):
+                    edge_img[i, j] = 1
+            elif img[i, j] > 0:
+                if (   (img[i - 1, j] < 0 or img[i + 1, j] < 0)
+                    or (img[i, j - 1] < 0 or img[i, j + 1] < 0)   ):
+                    edge_img[i, j] = 1
+            # img[i, j] < 0
+            else:
+                if img[i - 1, j] > 0:
+                    edge_img[i - 1, j] = 1
+                elif img[i + 1, j] > 0:
+                    edge_img[i + 1, j] = 1
+                elif img[i, j - 1] > 0:
+                    edge_img[i, j - 1] = 1
+                elif img[i, j + 1] > 0:
+                    edge_img[i, j + 1] = 1
+    return edge_img
+
+
 def edgeDetectionZeroCrossingLOG(img: np.ndarray) -> np.ndarray:
     """
     Detecting edges using "ZeroCrossingLOG" method
@@ -202,7 +245,14 @@ def edgeDetectionZeroCrossingLOG(img: np.ndarray) -> np.ndarray:
     :return: Edge matrix
     """
 
-    return
+    # Preper the LoG kernel (a single kernel for two kernels; Gaussian with Laplacian)
+    LoG_filter = conv2D(gaussianKernel(3), LAPLACIAN_MATRIX)
+
+    # Smooth and apply Laplacian in a single convolution
+    log_filtered_img = conv2D(img, LoG_filter)
+
+    # Find zero-crossing patterns
+    return findZCPatterns(log_filtered_img)
 
 
 def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
@@ -215,18 +265,51 @@ def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     :return: A list containing the detected circles,
                 [(x,y,radius),(x,y,radius),...]
     """
-
     return
 
 
 def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: float, sigma_space: float) -> (
         np.ndarray, np.ndarray):
     """
+    Implementation which based on practitioner guidance.
     :param in_image: input image
     :param k_size: Kernel size
     :param sigma_color: represents the filter sigma in the color space.
     :param sigma_space: represents the filter sigma in the coordinate.
     :return: OpenCV implementation, my implementation
     """
+    # Verify there is a valid input
+    if in_image.ndim != 2:
+        print "ERROR: The input image must be a 2 dimensions image"
+        return in_image, in_image
+    
+    row, col = in_image.shape
+    half_kernel_size  = math.floor(k_size/2)
 
-    return
+    # init
+    filtered_image = np.empty([row, col])
+    extra_pad_img = cv2.copyMakeBorder(in_image, half_kernel_size, half_kernel_size,
+                             half_kernel_size, half_kernel_size, borderType=cv2.BORDER_REPLICATE)
+
+    pad_row, pad_col = extra_pad_img.shape
+    for x in range(half_kernel_size, pad_row - half_kernel_size):
+        for y in range(half_kernel_size , pad_col - half_kernel_size):
+            # Take pixel to flter
+            pivot_v = extra_pad_img[x, y]
+            # Take its neighborhood according to kernel size
+            neighborhood = extra_pad_img[x - half_kernel_size : x + half_kernel_size  + 1,
+                                          y - half_kernel_size : y + half_kernel_size  + 1]
+
+            # The formula: newValue = (color_diff_factor * space_diff_factor * oldValue).sum()
+            #                        / (color_diff_factor * space_diff_factor).sum()
+            color_diff = pivot_v - neighborhood
+            color_diff_factor = np.exp(-np.power(color_diff, 2) / (2 * sigma_color))
+
+            gaus_kernel = cv2.getGaussianKernel(k_size, sigma_space)
+            space_diff_factor = gaus_kernel.dot(gaus_kernel.T)
+
+            bilateral_fact = space_diff_factor  * color_diff_factor
+            filtered_image[x - half_kernel_size, y - half_kernel_size] = 
+                                (bilateral_fact * neighborhood).sum() / bilateral_fact.sum()
+
+    return cv2.bilateralFilter(in_image, k_size, sigma_color, sigma_space), filtered_image
