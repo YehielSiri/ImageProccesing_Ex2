@@ -256,6 +256,32 @@ def edgeDetectionZeroCrossingLOG(img: np.ndarray) -> np.ndarray:
     return findZCPatterns(log_filtered_img)
 
 
+def remove_closes_circles(xyr: np.ndarray, radius: int) -> list:
+    """
+    Exhibit function for houghCircle func.
+    Remove all closes circles for "pretty output"
+    :param xyr: the Circles
+    :param radius: min_radius // 2
+    :return:
+    """
+    let_xyr = []
+
+    while len(xyr) > 0:
+        # Choose most ranked circle
+        curr_arg = xyr[:, -1].argmax()
+        curr = xyr[curr_arg, :]
+        let_xyr.append(curr)
+        xyr = np.delete(xyr, curr_arg, axis=0)
+
+        # Find close neighbors
+        dist_table = np.sqrt(np.square(xyr[:, :2] - curr[:2]).sum(axis=1)) < radius
+        what_to_delete = np.where(dist_table)
+
+        # Delete neighbors
+        xyr = np.delete(xyr, what_to_delete, axis=0)
+    return let_xyr
+
+
 def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     """
     Find Circles in an image using a Hough Transform algorithm extension
@@ -322,7 +348,7 @@ def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     circles = np.array([x, y, rad + min_radius, circle_hist[y, x, rad]]).T
 
     # For the buty, clean all the closes circels
-    #circles = remove_closes_circles(circles, min_radius // 2)
+    circles = remove_closes_circles(circles, min_radius // 2)
 
     print(HOUGH_THRESHOLD)
     return circles
