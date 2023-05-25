@@ -91,10 +91,7 @@ def convolve(image, kernel):
 	return output
     """
     # Set the convolution measurements according the kernel dimension:
-    if ((kernel.ndim % 2) == 0)
-        print "The kernel dimension must be odd"
-        return in_image
-    elif (kernel.ndim == 1):
+    if (kernel.ndim == 1):
         convHeight = 1
         height_pad = 0
         convWidth = kernel.shape[0]
@@ -168,8 +165,8 @@ def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:
     plt.imshow(gaussianKernel(5))
 
     # Kernel size must be odd and positive
-    if ((k_size % 2) == 0 || k_size < 0)
-        print "The kernel dimension must be odd and positive"
+    if (k_size % 2) == 0 or k_size < 0:
+        print ("The kernel dimension must be odd and positive")
         return in_image
 
     return conv2D(in_image, gaussianKernel(k_size))
@@ -183,8 +180,8 @@ def blurImage2(in_image: np.ndarray, k_size: int) -> np.ndarray:
     :return: The Blurred image
     """
     # Kernel size must be odd and positive
-    if ((k_size % 2) == 0 || k_size < 0)
-        print "The kernel dimension must be odd and positive"
+    if ((k_size % 2) == 0 or k_size < 0):
+        print ("The kernel dimension must be odd and positive")
         return in_image
     
     # Build a gaussian kernel. cv2 creata an 1D one!
@@ -367,7 +364,7 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
     """
     # Verify there is a valid input
     if in_image.ndim != 2:
-        print "ERROR: The input image must be a 2 dimensions image"
+        print ("ERROR: The input image must be a 2 dimensions image")
         return in_image, in_image
     
     row, col = in_image.shape
@@ -396,11 +393,6 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
             space_diff_factor = gaus_kernel.dot(gaus_kernel.T)
 
             bilateral_fact = space_diff_factor  * color_diff_factor
-            filtered_image[x - half_kernel_size, y - half_kernel_size] = 
-                                (bilateral_fact * neighborhood).sum() / bilateral_fact.sum()
+            filtered_image[x - half_kernel_size, y - half_kernel_size] = (bilateral_fact * neighborhood).sum() / bilateral_fact.sum()
 
     return cv2.bilateralFilter(in_image, k_size, sigma_color, sigma_space), filtered_image
-
-
-
-def houghCircles(image: ndarray, minRadius: int, maxRadius: int) -> ()
