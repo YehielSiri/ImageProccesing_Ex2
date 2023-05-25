@@ -19,6 +19,7 @@ DERIVATIVE_KERNEL = np.array([[1, 0, -1]])
 LAPLACIAN_MATRIX = np.array([0 ,1 , 0],
                             [1 ,-4, 1],
                             [0 , 1, 0])
+HOUGH_THRESHOLD = 11
 
 
 def myID() -> np.int:
@@ -265,7 +266,67 @@ def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     :return: A list containing the detected circles,
                 [(x,y,radius),(x,y,radius),...]
     """
-    return
+    # init
+    circles = []
+    rows, cols = img.shape
+
+    # Validate max radius is correct
+    max_radius = min(max_radius, min(rows, cols) // 2)
+
+    # Calculate derivatives on the both axis, x and y, using cv2.Sobel
+    gradients_x = cv2.Sobel(img, -1, 1, 0)
+    gradients_y = cv2.Sobel(img, -1, 0, 1)
+
+    # Direction
+    direction = np.arctan2(gradients_x, gradients_y)
+
+    # Find image's edges using cv2.Canny
+    Canny_Edges = cv2.Canny((img * 255).astype(np.uint8), 550, 100)
+
+    # Init the histogram space
+    radii_diff = max_radius - min_radius
+    circle_hist = np.zeros((rows, cols, radii_diff))
+    
+    # Init coordinates for both axis
+    yCor, xCor = np.where(Canny_Edges)
+
+    # Calculate Sinus & Cosinus for each edge pixel
+    sinuses = np.sin(direction[ yCor, xCor])
+    cosinuses= np.cos(direction[ yCor, xCor])
+
+    # Init radius range
+    radius_range = np.arange(min_radius, max_radius)
+
+    for y1, x1, y2, x2 in zip( yCor, xCor, sinuses, cosinuses):
+        dir_sin = (radius_range * y2).astype(np.int)
+        dir_cos = (radius_range * x2).astype(np.int)
+        x_1 = x1 + dir_cos
+        y_1 = y1 + dir_sin
+
+        x_2 = x1 - dir_cos
+        y_2 = y1 - dir_sin
+
+        # Check centers in the image
+        r_idx1 = np.logical_and(y_1 > 0, x_1 > 0)
+        r_idx1 = np.logical_and(r_idx1, np.logical_and(y_1 < rows, x_1 < cols))
+        r_idx2 = np.logical_and(y_2 > 0, x_2 > 0)
+        r_idx2 = np.logical_and(r_idx2, np.logical_and(y_2 < rows, x_2 < cols))
+
+        # Add circles to the histogram
+        circle_hist[y_1[r_idx1], x_1[r_idx1], r_idx1] += 1
+        circle_hist[y_2[r_idx2], x_2[r_idx2], r_idx2] += 1
+
+    # Find all the circles centers according to threshold
+    y, x, rad = np.where(circle_hist > HOUGH_THRESHOLD)
+
+    circles = np.array([x, y, rad + min_radius, circle_hist[y, x, rad]]).T
+
+    # For the buty, clean all the closes circels
+    #circles = remove_closes_circles(circles, min_radius // 2)
+
+    print(HOUGH_THRESHOLD)
+    return circles
+
 
 
 def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: float, sigma_space: float) -> (
@@ -313,3 +374,7 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
                                 (bilateral_fact * neighborhood).sum() / bilateral_fact.sum()
 
     return cv2.bilateralFilter(in_image, k_size, sigma_color, sigma_space), filtered_image
+
+
+
+def houghCircles(image: ndarray, minRadius: int, maxRadius: int) -> ()
