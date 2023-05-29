@@ -55,7 +55,7 @@ def conv2Demo():
 
 
 def derivDemo():
-    img = cv2.imread('/home/hay/Desktop/master_degree/image processing/Ex2/beach.jpg', cv2.IMREAD_GRAYSCALE) / 255
+    img = cv2.imread('input/beach.jpg', cv2.IMREAD_GRAYSCALE) / 255
     ori, mag = convDerivative(img)
 
     f, ax = plt.subplots(1, 2)
@@ -127,10 +127,10 @@ def edgeDemo():
 
 
 def houghDemo():
-    img = cv2.imread('coins.jpg', cv2.IMREAD_GRAYSCALE) / 255
+    img = cv2.imread('input/coins.jpg', cv2.IMREAD_GRAYSCALE) / 255
     min_r, max_r = 50, 100
 
-    # # TEST WITH YOUR IMPLEMENT ONLY
+    # TEST WITH YOUR IMPLEMENT ONLY
     # img = cv2.imread('input/pool_balls.jpg', cv2.IMREAD_GRAYSCALE) / 255
     # min_r, max_r = 10, 20
 
@@ -152,19 +152,19 @@ def houghDemo():
         ax.add_artist(circle1)
     plt.show()
     # OpenCV
-    for c in cv2_cir[0]:
-        circle1 = plt.Circle((c[0], c[1]), c[2], color='g', fill=False, linewidth=2)
-        ax.add_artist(circle1)
-    plt.show()
+    # for c in cv2_cir[0]:
+    #     circle1 = plt.Circle((c[0], c[1]), c[2], color='g', fill=False, linewidth=2)
+    #     ax.add_artist(circle1)
+    # plt.show()
 
 
 def biliteralFilterDemo():
-    img = cv2.imread('/home/hay/Dropbox/master_degree/image processing/Ex2/boxMan.jpg', cv2.IMREAD_GRAYSCALE)
-    # cv2.imwrite("original_image_grayscale.jpg", img)
+    img = cv2.imread('input/boxMan.jpg', cv2.IMREAD_GRAYSCALE)
+    cv2.imwrite("input/original_image_grayscale.jpg", img)
 
     filtered_image_CV, filtered_image_my = bilateral_filter_implement(img, 9, 8.0, 1.0)
-    cv2.imwrite("filtered_image_OpenCV.jpg", filtered_image_CV)
-    cv2.imwrite("filtered_image_my.jpg", filtered_image_my)
+    cv2.imwrite("input/filtered_image_OpenCV.jpg", filtered_image_CV)
+    cv2.imwrite("input/filtered_image_my.jpg", filtered_image_my)
 
     print("MSE: {}".format(MSE(filtered_image_my, filtered_image_CV)))
     print("Max Error: {}".format(np.abs(filtered_image_my - filtered_image_CV).max()))
@@ -172,12 +172,13 @@ def biliteralFilterDemo():
 
 def main():
     print("ID:", myID())
-    # conv1Demo()
-    # conv2Demo()
-    # derivDemo()
-    # blurDemo()
-    # edgeDemo()
-    # houghDemo()
+    conv1Demo()
+    conv2Demo()
+    derivDemo()
+    blurDemo()
+    edgeDemo()
+    edgeDemoLOG()
+    houghDemo()
     biliteralFilterDemo()
 
 

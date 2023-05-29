@@ -13,16 +13,17 @@
 import math
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 
 DERIVATIVE_KERNEL = np.array([[1, 0, -1]])
-LAPLACIAN_MATRIX = np.array([0 ,1 , 0],
+LAPLACIAN_MATRIX = np.array([[0 ,1 , 0],
                             [1 ,-4, 1],
-                            [0 , 1, 0])
-HOUGH_THRESHOLD = 11
+                            [0 , 1, 0]])
+HOUGH_THRESHOLD = 0.7
 
 
-def myID() -> np.int:
+def myID() -> int:
     """
     Return my ID (not the friend's ID I copied from)
     :return: int
@@ -55,40 +56,6 @@ def conv2D(in_image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
     :param in_image: 2D image
     :param kernel: A kernel
     :return: The convolved image
-
-def convolve(image, kernel):
-	# grab the spatial dimensions of the image, along with
-	# the spatial dimensions of the kernel
-	(iH, iW) = image.shape[:2]
-	(kH, kW) = kernel.shape[:2]
-	# allocate memory for the output image, taking care to
-	# "pad" the borders of the input image so the spatial
-	# size (i.e., width and height) are not reduced
-	pad = (kW - 1) // 2
-	image = cv2.copyMakeBorder(image, pad, pad, pad, pad,
-		cv2.BORDER_REPLICATE)
-	output = np.zeros((iH, iW), dtype="float32")
-	# loop over the input image, "sliding" the kernel across
-	# each (x, y)-coordinate from left-to-right and top to
-	# bottom
-	for y in np.arange(pad, iH + pad):
-		for x in np.arange(pad, iW + pad):
-			# extract the ROI of the image by extracting the
-			# *center* region of the current (x, y)-coordinates
-			# dimensions
-			roi = image[y - pad:y + pad + 1, x - pad:x + pad + 1]
-			# perform the actual convolution by taking the
-			# element-wise multiplicate between the ROI and
-			# the kernel, then summing the matrix
-			k = (roi * kernel).sum()
-			# store the convolved value in the output (x,y)-
-			# coordinate of the output image
-			output[y - pad, x - pad] = k
-	# rescale the output image to be in the range [0, 255]
-	output = rescale_intensity(output, in_range=(0, 255))
-	output = (output * 255).astype("uint8")
-	# return the output image
-	return output
     """
     # Set the convolution measurements according the kernel dimension:
     if (kernel.ndim == 1):
@@ -104,26 +71,31 @@ def convolve(image, kernel):
         width_pad = int((convWidth - 1) / 2)    # Kernel must be odd
         kernel = kernel[-1::-1, -1::-1]
     
-    # For option " ’border Type’ = cv2.BORDER_REPLICATE ", extra padding:
+    # For option " ï¿½border Typeï¿½ = cv2.BORDER_REPLICATE ", extra padding:
     padded_image = cv2.copyMakeBorder(in_image, height_pad, height_pad, width_pad, width_pad, borderType = cv2.BORDER_REPLICATE)
 
-    result_image = np.zeros(in_image.shape)
-    for i in range(result_image.shape[0]):
-        for j in range(result_image.shape[1]):
+    row, col = (0, 0)
+    try:
+        row, col = in_image.shape
+    except AttributeError:
+        print('AttributeError: value is', in_image)
+
+    result_image = np.zeros((row, col), dtype="float32")
+            
+    for i in range(row):
+        for j in range(col):
             sub_image = padded_image[i: i + convHeight, j: j + convWidth]
             result_image[i, j] = (sub_image * kernel).sum()
 
     return result_image
 
 
-def convDerivative(in_image: np.ndarray) -> (np.ndarray, np.ndarray):
+def convDerivative(in_image: np.ndarray) -> (tuple[np.ndarray, np.ndarray]):
     """
     Calculate gradient of an image
     :param in_image: Grayscale image
     :return: (directions, magnitude)
     """
-    #kernel = np.array([[1, 0, -1]])
-    #kernel_transpose = kernel.T
 
     x_der_image = conv2D(in_image, DERIVATIVE_KERNEL)
     y_der_image = conv2D(in_image, DERIVATIVE_KERNEL.T)
@@ -161,9 +133,6 @@ def blurImage1(in_image: np.ndarray, k_size: int) -> np.ndarray:
     :param k_size: Kernel size
     :return: The Blurred image
     """
-    # Test & show my gaussian kernel function:
-    plt.imshow(gaussianKernel(5))
-
     # Kernel size must be odd and positive
     if (k_size % 2) == 0 or k_size < 0:
         print ("The kernel dimension must be odd and positive")
@@ -253,32 +222,6 @@ def edgeDetectionZeroCrossingLOG(img: np.ndarray) -> np.ndarray:
     return findZCPatterns(log_filtered_img)
 
 
-def remove_closes_circles(xyr: np.ndarray, radius: int) -> list:
-    """
-    Exhibit function for houghCircle func.
-    Remove all closes circles for "pretty output"
-    :param xyr: the Circles
-    :param radius: min_radius // 2
-    :return:
-    """
-    let_xyr = []
-
-    while len(xyr) > 0:
-        # Choose most ranked circle
-        curr_arg = xyr[:, -1].argmax()
-        curr = xyr[curr_arg, :]
-        let_xyr.append(curr)
-        xyr = np.delete(xyr, curr_arg, axis=0)
-
-        # Find close neighbors
-        dist_table = np.sqrt(np.square(xyr[:, :2] - curr[:2]).sum(axis=1)) < radius
-        what_to_delete = np.where(dist_table)
-
-        # Delete neighbors
-        xyr = np.delete(xyr, what_to_delete, axis=0)
-    return let_xyr
-
-
 def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     """
     Find Circles in an image using a Hough Transform algorithm extension
@@ -288,72 +231,48 @@ def houghCircle(img: np.ndarray, min_radius: int, max_radius: int) -> list:
     :param max_radius: Maximum circle radius
     :return: A list containing the detected circles,
                 [(x,y,radius),(x,y,radius),...]
-    """
+    """  
     # init
-    circles = []
-    rows, cols = img.shape
-
-    # Validate max radius is correct
-    max_radius = min(max_radius, min(rows, cols) // 2)
-
+    circles = list()
+    
     # Calculate derivatives on the both axis, x and y, using cv2.Sobel
-    gradients_x = cv2.Sobel(img, -1, 1, 0)
-    gradients_y = cv2.Sobel(img, -1, 0, 1)
+    sobel_x = cv2.Sobel(img, cv2.CV_64F, 0, 1, HOUGH_THRESHOLD)
+    sobel_y = cv2.Sobel(img, cv2.CV_64F, 1, 0, HOUGH_THRESHOLD)
 
-    # Direction
-    direction = np.arctan2(gradients_x, gradients_y)
+    # Directions
+    direction = np.radians(np.arctan2(sobel_x, sobel_y) * 180 / np.pi)
+    accumulator = np.zeros((len(img), len(img[0]), max_radius+1))
 
     # Find image's edges using cv2.Canny
-    Canny_Edges = cv2.Canny((img * 255).astype(np.uint8), 550, 100)
+    edges = cv2.Canny((img * 255).astype(np.uint8), 0.1, 0.45)
 
-    # Init the histogram space
-    radii_diff = max_radius - min_radius
-    circle_hist = np.zeros((rows, cols, radii_diff))
+    height = len(edges)
+    width = len(edges[0])
+    for x in range(0, height):
+        for y in range(0, width):
+            if edges[x][y] == 255:
+                for radius in range(min_radius, max_radius + 1):
+                    angle = direction[x, y] - np.pi / 2
+                    x1, x2 = np.int32(x - radius * np.cos(angle)), np.int32(x + radius * np.cos(angle))
+                    y1, y2 = np.int32(y + radius * np.sin(angle)), np.int32(y - radius * np.sin(angle))
+                    if 0 < x1 < len(accumulator) and 0 < y1 < len(accumulator[0]):
+                        accumulator[x1, y1, radius] += 1
+                    if 0 < x2 < len(accumulator) and 0 < y2 < len(accumulator[0]):
+                        accumulator[x2, y2, radius] += 1
+
+    thresh = np.multiply(np.max(accumulator), 1/2)
+
+    x, y, radius = np.where(accumulator >= thresh)
+    for i in range(len(x)):
+        if x[i] == 0 and y[i] == 0 and radius[i] == 0:
+            continue
+        circles.append((y[i], x[i], radius[i]))
     
-    # Init coordinates for both axis
-    yCor, xCor = np.where(Canny_Edges)
-
-    # Calculate Sinus & Cosinus for each edge pixel
-    sinuses = np.sin(direction[ yCor, xCor])
-    cosinuses= np.cos(direction[ yCor, xCor])
-
-    # Init radius range
-    radius_range = np.arange(min_radius, max_radius)
-
-    for y1, x1, y2, x2 in zip( yCor, xCor, sinuses, cosinuses):
-        dir_sin = (radius_range * y2).astype(np.int)
-        dir_cos = (radius_range * x2).astype(np.int)
-        x_1 = x1 + dir_cos
-        y_1 = y1 + dir_sin
-
-        x_2 = x1 - dir_cos
-        y_2 = y1 - dir_sin
-
-        # Check centers in the image
-        r_idx1 = np.logical_and(y_1 > 0, x_1 > 0)
-        r_idx1 = np.logical_and(r_idx1, np.logical_and(y_1 < rows, x_1 < cols))
-        r_idx2 = np.logical_and(y_2 > 0, x_2 > 0)
-        r_idx2 = np.logical_and(r_idx2, np.logical_and(y_2 < rows, x_2 < cols))
-
-        # Add circles to the histogram
-        circle_hist[y_1[r_idx1], x_1[r_idx1], r_idx1] += 1
-        circle_hist[y_2[r_idx2], x_2[r_idx2], r_idx2] += 1
-
-    # Find all the circles centers according to threshold
-    y, x, rad = np.where(circle_hist > HOUGH_THRESHOLD)
-
-    circles = np.array([x, y, rad + min_radius, circle_hist[y, x, rad]]).T
-
-    # For the buty, clean all the closes circels
-    circles = remove_closes_circles(circles, min_radius // 2)
-
-    print(HOUGH_THRESHOLD)
     return circles
 
 
-
 def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: float, sigma_space: float) -> (
-        np.ndarray, np.ndarray):
+        tuple[np.ndarray, np.ndarray]):
     """
     Implementation which based on practitioner guidance.
     :param in_image: input image
@@ -362,37 +281,26 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
     :param sigma_space: represents the filter sigma in the coordinate.
     :return: OpenCV implementation, my implementation
     """
-    # Verify there is a valid input
-    if in_image.ndim != 2:
-        print ("ERROR: The input image must be a 2 dimensions image")
-        return in_image, in_image
-    
-    row, col = in_image.shape
-    half_kernel_size  = math.floor(k_size/2)
-
     # init
-    filtered_image = np.empty([row, col])
-    extra_pad_img = cv2.copyMakeBorder(in_image, half_kernel_size, half_kernel_size,
-                             half_kernel_size, half_kernel_size, borderType=cv2.BORDER_REPLICATE)
+    half_k = int(k_size / 2)
+    new_img = np.pad(in_image, ((half_k, half_k), (half_k, half_k)), mode='edge').astype('float32')
+    result = [[(__bilateral_pixle(new_img, i + half_k, j + half_k, k_size, sigma_color, sigma_space))
+               for j in range(len(in_image[0]))] for i in range(len(in_image))]
+    result = np.array(np.rint(result)).astype('int')
+    opencv_result = cv2.bilateralFilter(in_image, k_size, sigma_color, sigma_space, cv2.BORDER_REPLICATE)
+    return opencv_result, result
 
-    pad_row, pad_col = extra_pad_img.shape
-    for x in range(half_kernel_size, pad_row - half_kernel_size):
-        for y in range(half_kernel_size , pad_col - half_kernel_size):
-            # Take pixel to flter
-            pivot_v = extra_pad_img[x, y]
-            # Take its neighborhood according to kernel size
-            neighborhood = extra_pad_img[x - half_kernel_size : x + half_kernel_size  + 1,
-                                          y - half_kernel_size : y + half_kernel_size  + 1]
 
-            # The formula: newValue = (color_diff_factor * space_diff_factor * oldValue).sum()
-            #                        / (color_diff_factor * space_diff_factor).sum()
-            color_diff = pivot_v - neighborhood
-            color_diff_factor = np.exp(-np.power(color_diff, 2) / (2 * sigma_color))
-
-            gaus_kernel = cv2.getGaussianKernel(k_size, sigma_space)
-            space_diff_factor = gaus_kernel.dot(gaus_kernel.T)
-
-            bilateral_fact = space_diff_factor  * color_diff_factor
-            filtered_image[x - half_kernel_size, y - half_kernel_size] = (bilateral_fact * neighborhood).sum() / bilateral_fact.sum()
-
-    return cv2.bilateralFilter(in_image, k_size, sigma_color, sigma_space), filtered_image
+def __bilateral_pixle(in_image: np.ndarray, y, x, k_size: int, sigma_color: float, sigma_space: float):
+    # The formula: newValue = (color_diff_factor * space_diff_factor * oldValue).sum()
+    #                        / (color_diff_factor * space_diff_factor).sum()
+    img = in_image
+    mid_kernel = int(k_size / 2)
+    pivot = img[y, x]  # the color of the target
+    neighbor_hood = img[y - mid_kernel:y + mid_kernel + 1, x - mid_kernel:x + mid_kernel + 1]
+    diff = pivot - neighbor_hood
+    diff_gau = np.exp(-np.power(diff, 2) / (2 * sigma_color ** 2))
+    distance_gau = cv2.getGaussianKernel(k_size, sigma_space)
+    distance_gau = distance_gau.dot(distance_gau.T)
+    combo = distance_gau * diff_gau
+    return (combo * neighbor_hood).sum() / combo.sum()
