@@ -122,17 +122,20 @@ def edgeDemoLOG():
 
 
 def edgeDemo():
-    edgeDemoSimple()
+    # edgeDemoSimple()
     edgeDemoLOG()
 
 
 def houghDemo():
-    img = cv2.imread('input/coins.jpg', cv2.IMREAD_GRAYSCALE) / 255
-    min_r, max_r = 50, 100
+    # img = cv2.imread('input/coins.jpg', cv2.IMREAD_GRAYSCALE) / 255
+    # min_r, max_r = 50, 100
 
     # TEST WITH YOUR IMPLEMENT ONLY
     # img = cv2.imread('input/pool_balls.jpg', cv2.IMREAD_GRAYSCALE) / 255
     # min_r, max_r = 10, 20
+
+    img = cv2.imread('input/tapet.jpg', cv2.IMREAD_GRAYSCALE) / 255
+    min_r, max_r = 1, 40
 
     # Mine
     st = time.time()
@@ -171,15 +174,14 @@ def biliteralFilterDemo():
 
 
 def main():
-    print("ID:", myID())
-    conv1Demo()
-    conv2Demo()
-    derivDemo()
-    blurDemo()
-    edgeDemo()
-    edgeDemoLOG()
+    # print("ID:", myID())
+    # conv1Demo()
+    # conv2Demo()
+    # derivDemo()
+    # blurDemo()
+    # edgeDemo()
     houghDemo()
-    biliteralFilterDemo()
+    # biliteralFilterDemo()
 
 
 if __name__ == '__main__':

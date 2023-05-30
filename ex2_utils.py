@@ -282,25 +282,45 @@ def bilateral_filter_implement(in_image: np.ndarray, k_size: int, sigma_color: f
     :return: OpenCV implementation, my implementation
     """
     # init
-    half_k = int(k_size / 2)
-    new_img = np.pad(in_image, ((half_k, half_k), (half_k, half_k)), mode='edge').astype('float32')
-    result = [[(__bilateral_pixle(new_img, i + half_k, j + half_k, k_size, sigma_color, sigma_space))
+    half_kernel_size = int(k_size / 2)
+    # padding & casting to float
+    padded_img = np.pad(in_image, ((half_kernel_size, half_kernel_size), (half_kernel_size, half_kernel_size)), mode='edge').astype('float32')
+    # filter
+    result = [[(bilateral_filter_for_pixle(padded_img, i + half_kernel_size, j + half_kernel_size, k_size, sigma_color, sigma_space))
                for j in range(len(in_image[0]))] for i in range(len(in_image))]
+    # casting back to int
     result = np.array(np.rint(result)).astype('int')
+    # openCV filter
     opencv_result = cv2.bilateralFilter(in_image, k_size, sigma_color, sigma_space, cv2.BORDER_REPLICATE)
     return opencv_result, result
 
 
-def __bilateral_pixle(in_image: np.ndarray, y, x, k_size: int, sigma_color: float, sigma_space: float):
-    # The formula: newValue = (color_diff_factor * space_diff_factor * oldValue).sum()
-    #                        / (color_diff_factor * space_diff_factor).sum()
-    img = in_image
-    mid_kernel = int(k_size / 2)
-    pivot = img[y, x]  # the color of the target
-    neighbor_hood = img[y - mid_kernel:y + mid_kernel + 1, x - mid_kernel:x + mid_kernel + 1]
-    diff = pivot - neighbor_hood
+def bilateral_filter_for_pixle(in_image: np.ndarray, y, x, k_size: int, sigma_color: float, sigma_space: float):
+    """
+    Calculate the bilateral filter value for one single pixel.
+    This, according to the formula:
+    
+                newValue = (color_diff_factor * space_diff_factor * oldValue).sum()
+                           / (color_diff_factor * space_diff_factor).sum()
+
+    :param in_image: input image
+    :param y: column number
+    :param x: row number
+    :param k_size: Kernel size
+    :param sigma_color: represents the filter sigma in the color space.
+    :param sigma_space: represents the filter sigma in the coordinate.
+    :return: this pixel bilateral filter value
+    """
+    # init
+    half_kernel_size = int(k_size / 2)
+    pivot = in_image[y, x]  # pixel's color
+    neighborhood = in_image[y - half_kernel_size:y + half_kernel_size + 1, x - half_kernel_size:x + half_kernel_size + 1]
+    # color_diff_factor
+    diff = pivot - neighborhood
     diff_gau = np.exp(-np.power(diff, 2) / (2 * sigma_color ** 2))
+    # space_diff_factor
     distance_gau = cv2.getGaussianKernel(k_size, sigma_space)
     distance_gau = distance_gau.dot(distance_gau.T)
+    # formula
     combo = distance_gau * diff_gau
-    return (combo * neighbor_hood).sum() / combo.sum()
+    return (combo * neighborhood).sum() / combo.sum()
