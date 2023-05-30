@@ -1,9 +1,9 @@
-# Image-Convolution-and-Edge-Detection
-Assignment number 2 in Computer Vision & Image Proccessing course.
+# Image Convolution and Edge Detection
+Assignment number 2 in Computer Vision & Image Proccessing course. All tasks and functions were written in the ex2_utils.py file and they were all tested in the ex2_main.py file.
 
 -----
 
-Implementation of:
+Using Python and the OpenCV library, implementation of:
 1. [ Convolution ](#convolution)
 2. [ Image derivatives ](#image-derivatives)
 3. [ Image Blurring ](#image-blurring)
@@ -28,7 +28,7 @@ Max Error: 0.4800071418285348
 -----
 
 <h2>Image derivatives</h2>
-Calculate gradient of an image.
+Calculate gradient of an image. An image derivative - gradient - is defined as the change in the pixel value of an image.
 
 <div align="center">
   
@@ -41,7 +41,8 @@ Calculate gradient of an image.
 -----
 
 <h2>Image Blurring</h2>
-Blurring an image using a Gaussian kernel, my implementation.
+Image blurring is achieved by convolving the image with a low-pass filter kernel. It is useful for removing noise. It actually removes high frequency content (eg: noise, edges) from the image. So edges are blurred a little bit in this operation (there are also blurring techniques which don't blur the edges).
+Here we are blurring an image using a Gaussian kernel, my implementation.
 
 <div align="center">
   
@@ -55,7 +56,8 @@ Blurring an image using a Gaussian kernel, my implementation.
 -----
 
 <h2>Edge detection via LoG zero-crossing</h2>
-Detecting edges using "ZeroCrossingLOG" method
+In edge detection, we find the boundaries or edges of objects in an image, by determining where the brightness of the image changes dramatically. Edge detection can be used to extract the structure of objects in an image. If we are interested in the number, size, shape, or relative location of objects in an image, edge detection allows us to focus on the parts of the image most helpful, while ignoring parts of the image that will not help us.
+Detecting edges using "ZeroCrossingLOG" method - Zero-Crossing Detector Using the Laplacian of Gaussian (LoG) Filter
 
 <div align="center">
   
@@ -68,6 +70,7 @@ Detecting edges using "ZeroCrossingLOG" method
 -----
 
 <h2>Hough Circles:</h2>
+The circle Hough Transform (CHT) is a basic feature extraction technique used in digital image processing for detecting circles in imperfect images. The circle candidates are produced by “voting” in the Hough parameter space and then selecting local maxima in an accumulator matrix.
 Find Circles in an image using a Hough Transform algorithm extension.
 
 | Original | Output | Original | Output |
